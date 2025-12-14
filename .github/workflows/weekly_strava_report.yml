@@ -59,4 +59,4 @@ jobs:
           from: ${{ secrets.MAIL_FROM }}
           body: "Automated Strava sync completed. Quarto HTML report attached."
           attachments: |
-            reports/quarto_template.html
+            figures/*.pdf
