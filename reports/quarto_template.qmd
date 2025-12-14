@@ -36,7 +36,7 @@ conflict_prefer("filter", "dplyr")
 ```
 
 ```{r}
-source(here("../../", "/library/CloudStorage/OneDrive-Charité-UniversitätsmedizinBerlin/Data_analysis/R_functions/R/theme/theme_layout.R"))
+source(here("R/theme_layout.R"))
 ```
 
 # import data
