@@ -261,7 +261,7 @@ plotting_overview <- function(df, x_var, y_var, show_smoothed = TRUE){
 
 # Usage
 plot_summary_dist <- plotting_overview(
-  df_minimal_ma %>% filter(date >= today() - days(720)), 
+  df_minimal_ma %>% filter(date >= today() - days(180)), 
   x_var = "date", 
   y_var = "distance"
 ) & labs(y="km")
@@ -270,7 +270,7 @@ plot_summary_dist
 
 
 plot_summary_time <- plotting_overview(
-  df_minimal_ma %>% filter(date >= today() - days(720)), 
+  df_minimal_ma %>% filter(date >= today() - days(180)), 
   x_var = "date", 
   y_var = "moving_time_hr"
 ) & labs(y="hours")
@@ -282,7 +282,7 @@ dir.create("figures", recursive = TRUE, showWarnings = FALSE)
 
 ggsave(
   "figures/weekly_distance.pdf",
-  plot = p,
+  plot = plot_summary_dist,
   width = 21,
   height = 14,
   units = "cm",
