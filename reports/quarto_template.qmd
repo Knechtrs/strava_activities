@@ -278,9 +278,11 @@ plot_summary_time <- plotting_overview(
 plot_summary_time
 ```
 ```{r}
-dir.create("reports/figures", recursive = TRUE, showWarnings = FALSE)
+dir.create("figures", recursive = TRUE, showWarnings = FALSE)
+
 ggsave(
   "figures/weekly_distance.pdf",
+  plot = p,
   width = 21,
   height = 14,
   units = "cm",
