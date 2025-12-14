@@ -1,0 +1,268 @@
+---
+title: "strava export"
+author: "Raphael S. Knecht"
+date: today
+format: html
+editor: visual
+---
+
+```{r setup}
+
+# # restore r-environment with loaded pacakges. At project-initialization this has already been done.
+# renv::restore()
+
+# ---- Load libraries ----
+library(here)
+library(tidyverse)      # includes dplyr, ggplot2, readr, etc.
+library(sessioninfo)
+library(RColorBrewer)
+library(svglite)
+library(viridis)
+library(patchwork)
+library(lubridate)
+library(hms)
+library(janitor)
+library(slider)
+
+# set filter preference
+library(conflicted)
+conflict_prefer("filter", "dplyr")
+
+# ---- renv management ----
+# This project already has renv initialized via setup script.
+# If you install new packages, run:
+#   install.packages("pkgname")
+#   renv::snapshot()
+```
+
+```{r}
+source(here("../../", "/library/CloudStorage/OneDrive-Charité-UniversitätsmedizinBerlin/Data_analysis/R_functions/R/theme/theme_layout.R"))
+```
+
+# import data
+
+```{r}
+
+raw_path <- here("data/raw/export_26195219/activities.csv")
+acts_raw <- read_csv(raw_path, show_col_types = FALSE)
+
+# tmp <- names(acts_raw) %>%
+#   tibble(name = .) %>%
+#   filter(str_detect(name, "Dist"))
+# 
+# acts_raw %>% select(all_of(tmp$name)
+
+```
+
+```{r}
+df_minimal <- acts_raw %>% 
+  select(c("Activity ID", "Activity Date", "Activity Type", "Elapsed Time...6", "Moving Time", "Distance...7")) %>% 
+  rename(
+    "Elapsed Time" = "Elapsed Time...6",
+    "Distance" = "Distance...7"
+  ) %>% 
+  clean_names()
+```
+
+```{r}
+
+df_minimal <- df_minimal %>%
+  mutate(
+    activity_date = mdy_hms(activity_date),
+    year  = year(activity_date),
+    month = month(activity_date),
+    day   = day(activity_date),
+    date = date(activity_date),
+    elapsed_hms = hms::as_hms(elapsed_time),
+    moving_time = hms::as_hms(moving_time)
+  ) %>% 
+  group_by(year, month, activity_type) %>% 
+  mutate(moving_time_hr = as.numeric(moving_time) / 3600) %>% 
+  filter(activity_type %in% c("Run", "Ride"))
+```
+
+
+```{r}
+
+cols <- c(
+  Run = viridis(3)[1],
+  Ride = viridis(3)[2]
+)
+
+plotting_geom_cont <- function(dat, x_var = "month", y_var, color) {
+  this_type <- unique(dat$activity_type)
+  
+  ggplot(dat, aes(x = !!sym(x_var), y = !!sym(y_var), fill = activity_type)) +
+     # facet_grid(year ~ ., scales = "fixed") +
+    scale_y_continuous(limits = c(0,NA), expand = expansion(mult=c(0.05,0.1))) +
+    scale_fill_manual(values = color) +
+    labs(
+      title = this_type,
+      x = "Month"
+    ) +
+    theme_layout +
+    theme(
+      strip.background = element_rect("grey80"),
+      legend.position = "none",
+      panel.grid.major = element_line(color = "grey90"),
+      plot.title = element_text(hjust=0.5)
+    )
+}
+```
+
+```{r}
+
+# Enhanced function with smoothing options
+add_rolling_metrics <- function(df, col_name, smooth = FALSE, smooth_span = 0.1) {
+  df_out <- df %>%
+    arrange(activity_type, date) %>%
+    group_by(activity_type) %>%
+    mutate(
+      "{col_name}_mean_7d" := slide_index_dbl(
+        .data[[col_name]], .i = date, .f = mean, .before = days(7)
+      ),
+      "{col_name}_mean_30d" := slide_index_dbl(
+        .data[[col_name]], .i = date, .f = mean, .before = days(30)
+      ),
+      "{col_name}_mean_90d" := slide_index_dbl(
+        .data[[col_name]], .i = date, .f = mean, .before = days(90)
+      ),
+      "{col_name}_sum_7d" := slide_index_dbl(
+        .data[[col_name]], .i = date, .f = sum, .before = days(7)
+      ),
+      "{col_name}_sum_30d" := slide_index_dbl(
+        .data[[col_name]], .i = date, .f = sum, .before = days(30)
+      ),
+      "{col_name}_sum_60d" := slide_index_dbl(
+        .data[[col_name]], .i = date, .f = sum, .before = days(60)
+      )
+    )
+  
+  # Add smoothed versions if requested
+  if (smooth) {
+    df_out <- df_out %>%
+      mutate(
+        "{col_name}_mean_7d_smooth" := predict(
+          loess(get(paste0(col_name, "_mean_7d")) ~ as.numeric(date), 
+                span = smooth_span, na.action = na.exclude)
+        ),
+        "{col_name}_mean_30d_smooth" := predict(
+          loess(get(paste0(col_name, "_mean_30d")) ~ as.numeric(date), 
+                span = smooth_span, na.action = na.exclude)
+        ),
+        "{col_name}_mean_90d_smooth" := predict(
+          loess(get(paste0(col_name, "_mean_90d")) ~ as.numeric(date), 
+                span = smooth_span, na.action = na.exclude)
+        ),
+               "{col_name}_sum_7d_smooth" := predict(
+          loess(get(paste0(col_name, "_sum_7d")) ~ as.numeric(date), 
+                span = smooth_span, na.action = na.exclude)
+        ),
+        "{col_name}_sum_30d_smooth" := predict(
+          loess(get(paste0(col_name, "_sum_30d")) ~ as.numeric(date), 
+                span = smooth_span, na.action = na.exclude)
+        ),
+         "{col_name}_sum_60d_smooth" := predict(
+          loess(get(paste0(col_name, "_sum_60d")) ~ as.numeric(date), 
+                span = smooth_span, na.action = na.exclude)
+        )
+      )
+  }
+  
+  df_out %>% ungroup()
+}
+
+# Use it
+df_minimal_ma <- df_minimal %>%
+  add_rolling_metrics("distance", smooth = TRUE, smooth_span = 0.05) %>%
+  add_rolling_metrics("moving_time_hr", smooth = TRUE, smooth_span = 0.05)
+
+names(df_minimal_ma)
+```
+
+```{r, fig.width=40/2.54, fig.height=20/2.54}
+plotting_overview <- function(df, x_var, y_var, show_smoothed = TRUE){
+  
+  # Build column names dynamically
+  ma_7d_col <- paste0(y_var, "_mean_7d_smooth")
+  ma_30d_col <- paste0(y_var, "_mean_30d_smooth")
+  ma_90d_col <- paste0(y_var, "_mean_90d_smooth")
+  ma_7d_sum_col <- paste0(y_var, "_sum_7d")
+  ma_30d_sum_col <- paste0(y_var, "_sum_30d")
+  ma_60d_sum_col <- paste0(y_var, "_sum_60d")
+
+  
+  plots_dist_cont <- df %>%
+    split(.$activity_type) %>%
+    map(function(data) {
+      p <- plotting_geom_cont(data, x_var = x_var, y_var = y_var, color = cols) + 
+        geom_jitter(width = 0.2, shape = 21, alpha = 0.5) 
+
+      # Add smoothed lines if they exist and show_smoothed is TRUE
+      if (show_smoothed && ma_7d_col %in% names(data)) {
+        p <- p +
+          geom_line(aes(y = .data[[ma_7d_col]]),
+                    color = "grey40", linewidth = 1, alpha = 0.7)
+        }
+      return(p)
+    })
+  
+  plots_summary_dist_cont <- df %>% 
+      split(.$activity_type) %>%
+    map(function(data) {
+      plotting_geom_cont(data, x_var = x_var, y_var = y_var, color = cols) + 
+      geom_line(
+        aes(y = .data[[ma_7d_sum_col]] / 7, colour = "7d"),
+        linewidth = 1, alpha = 0.7
+        ) +
+        geom_line(
+          aes(y = .data[[ma_30d_sum_col]] / 30, colour = "30d"),
+          linewidth = 1, alpha = 0.7
+        ) +
+        geom_line(
+          aes(y = .data[[ma_60d_sum_col]] / 60, colour = "60d"),
+          linewidth = 1, alpha = 0.7
+        ) +
+      scale_colour_manual(
+      name   = "Moving average / day",
+      limits = c("7d", "30d", "60d"),
+      values = c(
+        "7d"  = "grey70",
+        "30d" = "grey30",
+        "60d" = "black"
+        )
+      ) 
+      })
+  
+  plot_summary <- wrap_plots(
+    plots_dist_cont$Ride,
+    plots_summary_dist_cont$Ride,
+    plots_dist_cont$Run,
+    plots_summary_dist_cont$Run,
+    nrow = 2
+  )
+  
+  return(plot_summary)
+}
+
+# Usage
+plot_summary_dist <- plotting_overview(
+  df_minimal_ma %>% filter(date >= today() - days(720)), 
+  x_var = "date", 
+  y_var = "distance"
+) & labs(y="km")
+
+plot_summary_dist
+
+
+plot_summary_time <- plotting_overview(
+  df_minimal_ma %>% filter(date >= today() - days(720)), 
+  x_var = "date", 
+  y_var = "moving_time_hr"
+) & labs(y="hours")
+
+plot_summary_time
+```
+
+
+

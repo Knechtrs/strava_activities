@@ -1,0 +1,20 @@
+experiment_name: "2025-02-26_Project Relax_Hematoma"
+
+theme: 
+  fontfamily: "Arial"
+  FontSize: 10
+  PointSize: 1
+  LineWidth: 1
+
+scaling_factors:
+  title: 1.2
+  axistext: 1
+  legendtext: 1
+
+Color.Gels:
+  Slow: "#D6604D"
+  MVG: "#D6604D"
+  Fast: "#4393C3"
+  VLVG: "#4393C3"
+  Hematoma: "#762A83"
+
