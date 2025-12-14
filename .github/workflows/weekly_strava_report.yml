@@ -3,7 +3,7 @@ name: Weekly Strava report (sync + render + email)
 on:
   schedule:
     # Mondays 06:00 UTC (≈ 07:00 Berlin in winter, 08:00 in summer)
-    - cron: "0 6 * * 1"
+    - cron: "0 21 * * 7"
   workflow_dispatch:
 
 jobs:
