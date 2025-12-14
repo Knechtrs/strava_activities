@@ -8,3 +8,4 @@ reports/
 scripts_local/
 .env
 *.env
+reports/figures
