@@ -277,3 +277,14 @@ plot_summary_time <- plotting_overview(
 
 plot_summary_time
 ```
+```{r}
+ggsave(
+  "figures/weekly_distance.pdf",
+  width = 21,
+  height = 14,
+  units = "cm",
+  device = cairo_pdf
+)
+ggsave("figures/weekly_distance.pdf", width = 17, height = 21, units = "cm")
+```
+
