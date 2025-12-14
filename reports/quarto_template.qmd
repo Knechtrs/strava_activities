@@ -278,6 +278,7 @@ plot_summary_time <- plotting_overview(
 plot_summary_time
 ```
 ```{r}
+dir.create("reports/figures", recursive = TRUE, showWarnings = FALSE)
 ggsave(
   "figures/weekly_distance.pdf",
   width = 21,
@@ -285,6 +286,5 @@ ggsave(
   units = "cm",
   device = cairo_pdf
 )
-ggsave("figures/weekly_distance.pdf", width = 17, height = 21, units = "cm")
 ```
 
