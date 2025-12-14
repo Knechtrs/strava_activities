@@ -48,6 +48,8 @@ data_path <- here::here("data", "processed", "activities.csv")
 
 acts_raw <- read_csv(data_path, show_col_types = FALSE)
 
+glimpse(acts_raw)
+
 # tmp <- names(acts_raw) %>%
 #   tibble(name = .) %>%
 #   filter(str_detect(name, "Dist"))
