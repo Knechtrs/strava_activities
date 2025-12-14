@@ -60,4 +60,3 @@ jobs:
           body: "Automated Strava sync completed. Quarto HTML report attached."
           attachments: |
             reports/quarto_template.html
-            reports/quarto_template_files/**
