@@ -60,19 +60,30 @@ glimpse(acts_raw)
 
 ```{r}
 df_minimal <- acts_raw %>% 
-  select(c("Activity ID", "Activity Date", "Activity Type", "Elapsed Time...6", "Moving Time", "Distance...7")) %>% 
+  select(id, sport_type, distance, moving_time, elapsed_time, start_date_local) %>% 
   rename(
-    "Elapsed Time" = "Elapsed Time...6",
-    "Distance" = "Distance...7"
-  ) %>% 
-  clean_names()
+    "activity_id" = "id",
+    "activity_type" = "sport_type",
+    "activity_date" = "start_date_local"
+  )
+```
+
+
+```{r}
+# df_minimal <- acts_raw %>% 
+#   select(c("Activity ID", "Activity Date", "Activity Type", "Elapsed Time...6", "Moving Time", "Distance...7")) %>% 
+#   rename(
+#     "Elapsed Time" = "Elapsed Time...6",
+#     "Distance" = "Distance...7"
+#   ) %>% 
+#   clean_names()
 ```
 
 ```{r}
 
 df_minimal <- df_minimal %>%
   mutate(
-    activity_date = mdy_hms(activity_date),
+    activity_date = ymd_hms(activity_date),
     year  = year(activity_date),
     month = month(activity_date),
     day   = day(activity_date),
@@ -84,7 +95,6 @@ df_minimal <- df_minimal %>%
   mutate(moving_time_hr = as.numeric(moving_time) / 3600) %>% 
   filter(activity_type %in% c("Run", "Ride"))
 ```
-
 
 ```{r}
 
@@ -267,6 +277,3 @@ plot_summary_time <- plotting_overview(
 
 plot_summary_time
 ```
-
-
-
