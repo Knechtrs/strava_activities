@@ -9,14 +9,15 @@ on:
 jobs:
   weekly-report:
     runs-on: ubuntu-latest
+    
+    env:
+      MAIL_TO_RAPHAEL: ${{ secrets.MAIL_TO_RAPHAEL }}
+      MAIL_TO_LAUREN: ${{ secrets.MAIL_TO_LAUREN }}
             
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - user: raphael
-            mail_to: ${{ secrets.MAIL_TO_RAPHAEL }}
-          - user: lauren
-            mail_to: ${{ secrets.MAIL_TO_LAUREN }}
+        user: [raphael, lauren]
 
     steps:
       - name: Checkout
@@ -61,6 +62,17 @@ jobs:
         run: |
           ls -lah reports/figures/${{ matrix.user }} || true
           ls -lah reports/figures/${{ matrix.user }}/*.pdf || true
+          
+      - name: Select recipient
+        run: |
+          if [ "${{ matrix.user }}" = "raphael" ]; then
+            echo "MAIL_TO=${MAIL_TO_RAPHAEL}" >> $GITHUB_ENV
+          elif [ "${{ matrix.user }}" = "lauren" ]; then
+            echo "MAIL_TO=${MAIL_TO_LAUREN}" >> $GITHUB_ENV
+          else
+            echo "Unknown user: ${{ matrix.user }}"
+            exit 1
+          fi
 
       - name: Send email (per user)
         uses: dawidd6/action-send-mail@v3
@@ -71,7 +83,7 @@ jobs:
           password: ${{ secrets.SMTP_PASSWORD }}
 
           subject: Weekly Strava report (${{ matrix.user }})
-          to: ${{ matrix.mail_to }}
+          to: ${{ env.MAIL_TO }}
           from: ${{ secrets.MAIL_FROM }}
 
           body: |
