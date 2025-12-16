@@ -1,9 +1,10 @@
 ---
-title: "strava export"
-author: "Raphael S. Knecht"
-date: today
-format: html
-editor: visual
+title: "Weekly Strava report"
+params:
+  user: "lauren"
+format:
+  html:
+    self-contained: true
 ---
 
 ```{r setup}
@@ -89,8 +90,8 @@ df_minimal <- df_minimal %>%
 
 activities <- df_minimal %>% 
   group_by(activity_type) %>% 
-  summarise(number= n()) %>% 
-  filter(number>10) %>% 
+  # summarise(number= n()) %>% 
+  # filter(number>10) %>% 
   pull(activity_type)
 
 ```
@@ -204,8 +205,8 @@ add_rolling_metrics <- function(df, col_name, smooth = FALSE, smooth_span = 0.1)
 # Use it
 df_minimal_ma <- df_minimal %>%
   mutate(distance = distance / 1000) %>% 
-  add_rolling_metrics("distance", smooth = TRUE, smooth_span = 0.05) %>%
-  add_rolling_metrics("moving_time_hr", smooth = TRUE, smooth_span = 0.05)
+  add_rolling_metrics("distance", smooth = FALSE, smooth_span = 0.05) %>%
+  add_rolling_metrics("moving_time_hr", smooth = FALSE, smooth_span = 0.05)
 
 names(df_minimal_ma)
 ```
