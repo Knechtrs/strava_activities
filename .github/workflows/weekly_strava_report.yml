@@ -1,14 +1,23 @@
-name: Weekly Strava report (sync + render + email)
+name: Weekly Strava report
 
 on:
-  schedule:
-    # Sundays 21:00 UTC 
-    - cron: "0 19 * * 0"
   workflow_dispatch:
+  schedule:
+    # Sundays 21:00 UTC
+    - cron: "0 21 * * 0"
 
 jobs:
-  build-and-email:
+  weekly-report:
     runs-on: ubuntu-latest
+            
+    strategy:
+      fail_fast: false
+      matrix:
+        include:
+          - user: raphael
+            mail_to: ${{ secrets.MAIL_TO_RAPHAEL }}
+          - user: lauren
+            mail_to: ${{ secrets.MAIL_TO_LAUREN }}
 
     steps:
       - name: Checkout
@@ -19,44 +28,55 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Python dependencies
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
           pip install requests pandas
 
-      - name: Sync Strava activities
-        env:
-          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
-          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
-          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
-        run: |
-          python scripts/strava_sync.py
-
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
-      - name: Install Quarto
+      - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Restore renv
-        run: |
-          Rscript -e 'install.packages("renv", repos="https://cloud.r-project.org")'
-          Rscript -e 'renv::restore(prompt = FALSE)'
+      - name: Install R packages (renv)
+        uses: r-lib/actions/setup-renv@v2
 
-      - name: Render Quarto report
-        run: |
-          quarto render reports/quarto_template.qmd
+      - name: Sync Strava activities (per user)
+        env:
+          STRAVA_RAPHAEL_CLIENT_ID: ${{ secrets.STRAVA_RAPHAEL_CLIENT_ID }}
+          STRAVA_RAPHAEL_CLIENT_SECRET: ${{ secrets.STRAVA_RAPHAEL_CLIENT_SECRET }}
+          STRAVA_RAPHAEL_REFRESH_TOKEN: ${{ secrets.STRAVA_RAPHAEL_REFRESH_TOKEN }}
 
-      - name: Email report + assets
+          STRAVA_LAUREN_CLIENT_ID: ${{ secrets.STRAVA_LAUREN_CLIENT_ID }}
+          STRAVA_LAUREN_CLIENT_SECRET: ${{ secrets.STRAVA_LAUREN_CLIENT_SECRET }}
+          STRAVA_LAUREN_REFRESH_TOKEN: ${{ secrets.STRAVA_LAUREN_REFRESH_TOKEN }}
+        run: |
+          python scripts/strava_sync.py ${{ matrix.user }}
+
+      - name: Render report (per user)
+        run: |
+          quarto render reports/quarto_template.qmd -P user:${{ matrix.user }}
+
+      - name: List generated PDFs (debug)
+        run: |
+          ls -lah reports/figures/${{ matrix.user }} || true
+          ls -lah reports/figures/${{ matrix.user }}/*.pdf || true
+
+      - name: Send email (per user)
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.SMTP_SERVER }}
           server_port: ${{ secrets.SMTP_PORT }}
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "Strava weekly report"
-          to: ${{ secrets.MAIL_TO }}
+
+          subject: Weekly Strava report (${{ matrix.user }})
+          to: ${{ matrix.mail_to }}
           from: ${{ secrets.MAIL_FROM }}
-          body: "Made with love from Raphi. You are a awesome, and here is why!"
+
+          body: |
+            Attached: weekly Strava report PDFs for ${{ matrix.user }}.
+
           attachments: |
-            reports/figures/*.pdf
+            reports/figures/${{ matrix.user }}/*.pdf
