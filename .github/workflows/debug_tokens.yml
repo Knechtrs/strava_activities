@@ -7,7 +7,7 @@ jobs:
   debug:
     runs-on: ubuntu-latest
     steps:
-      - name: Debug token
+      - name: Debug Raphael token (safe, with error body)
         env:
           STRAVA_RAPHAEL_CLIENT_ID: ${{ secrets.STRAVA_RAPHAEL_CLIENT_ID }}
           STRAVA_RAPHAEL_CLIENT_SECRET: ${{ secrets.STRAVA_RAPHAEL_CLIENT_SECRET }}
@@ -18,14 +18,18 @@ jobs:
           cid = os.environ["STRAVA_RAPHAEL_CLIENT_ID"]
           sec = os.environ["STRAVA_RAPHAEL_CLIENT_SECRET"]
           rt  = os.environ["STRAVA_RAPHAEL_REFRESH_TOKEN"]
-          print("ID len:", len(cid))
+      
+          print("ID len:", len(cid), "isnumeric:", cid.strip().isdigit())
           print("SECRET len:", len(sec))
           print("REFRESH len:", len(rt))
+      
           r = requests.post("https://www.strava.com/oauth/token", data={
-              "client_id": cid,
-              "client_secret": sec,
-              "refresh_token": rt,
-              "grant_type": "refresh_token",
-          })
+            "client_id": cid.strip(),
+            "client_secret": sec.strip(),
+            "refresh_token": rt.strip(),
+            "grant_type": "refresh_token",
+          }, timeout=30)
+      
           print("Status:", r.status_code)
+          print("Body:", r.text)   # safe; Strava error messages only
           PY
