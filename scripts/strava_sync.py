@@ -7,30 +7,29 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 
-CLIENT_ID = os.environ["STRAVA_CLIENT_ID"]
-CLIENT_SECRET = os.environ["STRAVA_CLIENT_SECRET"]
-
-
 def get_user_key() -> str:
     if len(sys.argv) < 2:
         raise SystemExit("Usage: python scripts/strava_sync.py <user_key>  (e.g., raphael, lauren)")
     return sys.argv[1].strip().lower()
 
 
-def get_refresh_token(user_key: str) -> str:
-    env_name = f"STRAVA_{user_key.upper()}_REFRESH_TOKEN"
+def env_for_user(user_key: str, suffix: str) -> str:
+    return f"STRAVA_{user_key.upper()}_{suffix}"
+
+
+def get_required_env(name: str) -> str:
     try:
-        return os.environ[env_name]
+        return os.environ[name]
     except KeyError as e:
-        raise SystemExit(f"Missing environment variable: {env_name}") from e
+        raise SystemExit(f"Missing environment variable: {name}") from e
 
 
-def refresh_access_token(refresh_token: str) -> str:
+def refresh_access_token(client_id: str, client_secret: str, refresh_token: str) -> str:
     r = requests.post(
         "https://www.strava.com/oauth/token",
         data={
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
+            "client_id": client_id,
+            "client_secret": client_secret,
             "refresh_token": refresh_token,
             "grant_type": "refresh_token",
         },
@@ -62,13 +61,16 @@ def fetch_activities(access_token: str, per_page: int = 200, max_pages: int = 20
 
 def main():
     user_key = get_user_key()
-    refresh_token = get_refresh_token(user_key)
+
+    client_id = get_required_env(env_for_user(user_key, "CLIENT_ID"))
+    client_secret = get_required_env(env_for_user(user_key, "CLIENT_SECRET"))
+    refresh_token = get_required_env(env_for_user(user_key, "REFRESH_TOKEN"))
 
     outdir = Path("data/processed") / user_key
     outdir.mkdir(parents=True, exist_ok=True)
     outfile = outdir / "activities.csv"
 
-    token = refresh_access_token(refresh_token)
+    token = refresh_access_token(client_id, client_secret, refresh_token)
     rows = fetch_activities(token)
 
     df = pd.json_normalize(rows)
