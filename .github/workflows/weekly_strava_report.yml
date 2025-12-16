@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        user: [raphael, lauren]
+        user: [raphael]
 
     steps:
       - name: Checkout
