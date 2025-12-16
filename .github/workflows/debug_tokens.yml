@@ -1,0 +1,23 @@
+- name: Debug Raphael token (safe)
+  env:
+    STRAVA_RAPHAEL_CLIENT_ID: ${{ secrets.STRAVA_RAPHAEL_CLIENT_ID }}
+    STRAVA_RAPHAEL_CLIENT_SECRET: ${{ secrets.STRAVA_RAPHAEL_CLIENT_SECRET }}
+    STRAVA_RAPHAEL_REFRESH_TOKEN: ${{ secrets.STRAVA_RAPHAEL_REFRESH_TOKEN }}
+  run: |
+    python - <<'PY'
+    import os, requests
+    cid = os.environ["STRAVA_RAPHAEL_CLIENT_ID"]
+    sec = os.environ["STRAVA_RAPHAEL_CLIENT_SECRET"]
+    rt  = os.environ["STRAVA_RAPHAEL_REFRESH_TOKEN"]
+    print("ID len:", len(cid))
+    print("SECRET len:", len(sec))
+    print("REFRESH len:", len(rt))
+
+    r = requests.post("https://www.strava.com/oauth/token", data={
+      "client_id": cid,
+      "client_secret": sec,
+      "refresh_token": rt,
+      "grant_type": "refresh_token",
+    })
+    print("Status:", r.status_code)
+    PY
