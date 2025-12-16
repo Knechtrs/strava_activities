@@ -364,10 +364,14 @@ plot_summary_time <- wrapping_plots(plots_180_time, plots_720_time) & labs(y="ho
 ```
 
 ```{r}
-dir.create("figures", recursive = TRUE, showWarnings = FALSE)
+
+fig_dir <- file.path("figures", user)
+dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
+
+# dir.create("figures", recursive = TRUE, showWarnings = FALSE)
 
 ggsave(
-  "figures/weekly_distance.pdf",
+  filename = file.path(fig_dir, "weekly_distance.pdf"),
   plot = plot_summary_dist,
   width = 30,
   height = 15*length(activities),
@@ -376,7 +380,7 @@ ggsave(
 )
 
 ggsave(
-  "figures/weekly_time.pdf",
+  filename = file.path(fig_dir, "weekly_time.pdf"),
   plot = plot_summary_time,
   width = 30,
   height = 15*length(activities),
