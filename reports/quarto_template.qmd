@@ -43,10 +43,14 @@ source(here("R", "theme_layout.R"))
 
 ```{r}
 
-data_path <- here::here("data", "processed", "activities.csv")
+user <- params$user
+csv_path <- here("data", "processed", user, "activities.csv")
+
+
+# data_path <- here::here("data", "processed", "activities.csv")
 # raw_path <- here("data/raw/export_26195219/activities.csv")
 
-acts_raw <- read_csv(data_path, show_col_types = FALSE)
+acts_raw <- read_csv(csv_path, show_col_types = FALSE)
 
 glimpse(acts_raw)
 
@@ -67,7 +71,6 @@ df_minimal <- acts_raw %>%
     "activity_date" = "start_date_local"
   )
 ```
-
 
 ```{r}
 # combine sport activites into groups
@@ -91,7 +94,6 @@ activities <- df_minimal %>%
   pull(activity_type)
 
 ```
-
 
 ```{r}
 
@@ -307,7 +309,6 @@ plots_720_time <- plotting_overview(
 
 ```
 
-
 ```{r, fig.height=30/2.54}
 wrapping_plots <- function(plots_180, plots_720) {
   
@@ -361,7 +362,6 @@ plot_summary_dist <- wrapping_plots(plots_180_dist, plots_720_dist) & labs(y="km
 plot_summary_time <- wrapping_plots(plots_180_time, plots_720_time) & labs(y="hours") & theme(axis.title.x = element_blank())
 
 ```
-
 
 ```{r}
 dir.create("figures", recursive = TRUE, showWarnings = FALSE)
