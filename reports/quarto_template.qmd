@@ -310,14 +310,27 @@ plots_720_time <- plotting_overview(
 
 ```
 
-```{r, fig.height=30/2.54}
-wrapping_plots <- function(plots_180, plots_720) {
-  
-  activities <- names(plots_720$plots_activity)
 
-  # Extract all plots for each activity and flatten into a single list
+```{r, fig.height=30/2.54}
+wrapping_plots <- function(plots_180, plots_720, empty_msg = "No activities available for this metric.") {
+
+  # Helper: placeholder plot so downstream patchwork ops (& labs, & theme) still work
+  empty_panel <- function(msg) {
+    ggplot2::ggplot() +
+      ggplot2::annotate("text", x = 0, y = 0, label = msg, size = 4) +
+      ggplot2::xlim(-1, 1) + ggplot2::ylim(-1, 1) +
+      ggplot2::theme_void()
+  }
+
+  # Guard: missing or empty activity list
+  acts <- names(plots_720$plots_activity)
+  if (is.null(acts) || length(acts) == 0) {
+    return(empty_panel(empty_msg))
+  }
+
+  # Build plots list: always 4 per activity in the order you intend
   plots_to_wrap <- unlist(
-    lapply(activities, function(act) {
+    lapply(acts, function(act) {
       list(
         plots_720$plots_activity[[act]],
         plots_720$plots_sum[[act]],
@@ -327,42 +340,46 @@ wrapping_plots <- function(plots_180, plots_720) {
     }),
     recursive = FALSE
   )
-  
-  # Calculate total number of plots per activity (should be 4 in this case)
-  n_plots_per_activity <- length(plots_720) + length(plots_180)
-  
-  # Create layout design for all activities
-  # Each activity gets: AA, BB, CD (where AA and BB span full width, CD is split)
-  designs <- lapply(seq_along(activities), function(i) {
-    # Calculate letter offset: Activity 1 starts at A, Activity 2 at E, etc.
-    offset <- (i - 1) * n_plots_per_activity  # offset: Shifts letters for each activity (0 for first, 4 for second, etc.)
-    
-    # Create full-width rows for the first (n_plots_per_activity - 2) plots
-    # E.g., "AA", "BB" for plots 1 and 2
+
+  # Keep only ggplot/grob objects (drop NULLs and anything else)
+  plots_to_wrap <- Filter(
+    function(p) inherits(p, "ggplot") || inherits(p, "grob"),
+    plots_to_wrap
+  )
+
+  # If everything got dropped, return placeholder
+  if (length(plots_to_wrap) == 0) {
+    return(empty_panel(empty_msg))
+  }
+
+  # You are designing for 4 plots per activity: 2 full-width rows + 1 split row
+  n_plots_per_activity <- 4
+
+  designs <- lapply(seq_along(acts), function(i) {
+    offset <- (i - 1) * n_plots_per_activity
+
     full_width_rows <- sapply(1:(n_plots_per_activity - 2), function(j) {
       letter <- LETTERS[j + offset]
       paste0(letter, letter)
     })
-    
-    # Create split row for the last 2 plots (e.g., "CD")
+
     split_row <- paste0(
       LETTERS[n_plots_per_activity - 1 + offset],
       LETTERS[n_plots_per_activity + offset]
     )
-    
+
     c(full_width_rows, split_row)
   })
-  
-  # Combine all designs into a single string with newlines
+
   design <- paste(unlist(designs), collapse = "\n")
-  
-  wrap_plots(plots_to_wrap, design = design)
+
+  patchwork::wrap_plots(plots_to_wrap, design = design)
 }
 
 plot_summary_dist <- wrapping_plots(plots_180_dist, plots_720_dist) & labs(y="km") & theme(axis.title.x = element_blank())
 plot_summary_time <- wrapping_plots(plots_180_time, plots_720_time) & labs(y="hours") & theme(axis.title.x = element_blank())
-
 ```
+
 
 ```{r}
 
