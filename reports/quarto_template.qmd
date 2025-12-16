@@ -1,7 +1,7 @@
 ---
 title: "Weekly Strava report"
 params:
-  user: "lauren"
+  user: "raphael"
 format:
   html:
     self-contained: true
@@ -90,7 +90,7 @@ df_minimal <- df_minimal %>%
 
 activities <- df_minimal %>% 
   group_by(activity_type) %>% 
-  # summarise(number= n()) %>% 
+  summarise(number= n()) %>%
   # filter(number>10) %>% 
   pull(activity_type)
 
@@ -394,7 +394,8 @@ ggsave(
   width = 30,
   height = 15*length(activities),
   units = "cm",
-  device = cairo_pdf
+  device = cairo_pdf,
+  limitsize = FALSE
 )
 
 ggsave(
@@ -403,6 +404,7 @@ ggsave(
   width = 30,
   height = 15*length(activities),
   units = "cm",
-  device = cairo_pdf
+  device = cairo_pdf,
+  limitsize = FALSE
 )
 ```
