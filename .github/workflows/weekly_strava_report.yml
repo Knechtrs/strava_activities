@@ -4,14 +4,13 @@ on:
   workflow_dispatch:
   schedule:
     # Sundays 21:00 UTC
-    - cron: "0 21 * * 0"
+    - cron: "0 19 * * 0"
 
 jobs:
   weekly-report:
     runs-on: ubuntu-latest
             
     strategy:
-      fail_fast: false
       matrix:
         include:
           - user: raphael
