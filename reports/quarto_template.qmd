@@ -79,7 +79,7 @@ df_minimal <- df_minimal %>%
   mutate(
     activity_type = case_when(
       activity_type %in% c("Run", "TrailRun", "Hike") ~ "Running",
-      activity_type %in% c("Ride", "GravelRide") ~ "Cycling",
+      activity_type %in% c("Ride", "GravelRide", "MountainBikeRide") ~ "Cycling",
       activity_type %in% c("WeightTraining", "Workout") ~ "Strength",
       activity_type == "Swim" ~ "Swimming",
       TRUE ~ activity_type
