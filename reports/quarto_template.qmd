@@ -408,3 +408,135 @@ ggsave(
   limitsize = FALSE
 )
 ```
+
+```{r}
+
+# create dataframe with activities and all days of the year
+df_cum <- df_minimal %>%
+  mutate(
+    year = as.integer(year),
+    doy  = yday(date),
+    distance_km = distance / 1000 # convert to km
+  ) %>%
+  group_by(year, activity_type, doy) %>%
+  summarise(
+    moving_time_hr = sum(moving_time_hr, na.rm = TRUE), # sum up activities if multiple per day
+    distance_km    = sum(distance_km, na.rm = TRUE), # sum up activities if multiple per day
+    .groups = "drop"
+  ) %>%
+  group_by(year, activity_type) %>%
+  complete(doy = 1:366, fill = list(moving_time_hr = 0, distance_km = 0)) %>% # add all days per year
+  arrange(doy, .by_group = TRUE) %>%
+  mutate(
+    time_cum = cumsum(moving_time_hr), # calculate cumulative sum
+    dist_cum = cumsum(distance_km) # calculate cumulative sum
+  ) %>%
+  ungroup()
+
+# create blue color gradient
+col_years <- pal <- pal_gradient_n(
+  brewer.pal(9, "Blues")[-c(1:3)]
+)(seq(0, 1, length.out = length(unique(df_minimal$year))))
+
+# x-axis labels position
+month_breaks <- yday(seq(
+  as.Date("2001-01-01"),
+  as.Date("2001-12-01"),
+  by = "1 month"
+))
+
+# x-axis labels
+month_labels <- month.abb
+
+
+plotting_cum_plots <- function(df) {
+  
+  # Check what activity types are in the data
+  activity_types <- unique(df$activity_type)
+  
+  # Determine y variable based on activity type
+  if ("Strength" %in% activity_types) {
+    y_var <- "time_cum"
+    y_label <- "hours"
+  } else {
+    y_var <- "dist_cum"
+    y_label <- "km"
+  }
+  
+  # Create labels dataframe for the filtered data
+  df_labels <- df %>%
+    group_by(activity_type, year) %>%
+    filter(doy == max(doy)) %>%
+    ungroup()
+  
+  ggplot(df, aes(x = doy, y = !!sym(y_var), group = year, color = factor(year))) +
+    geom_line() +
+    geom_line(
+      data = subset(df, year == max(year)),
+      linewidth = 0.8
+    ) +
+     geom_text_repel(
+      data = df_labels,
+      aes(label = year),
+      direction = "y",
+      hjust = 0,
+      nudge_x = 15,
+      size = 3,
+      show.legend = FALSE,
+      box.padding = 0.2,
+      point.padding = 0,
+      segment.color = "grey50",
+      segment.size = 0.25,
+      min.segment.length = 0
+    ) +
+    facet_wrap(~ activity_type, scales = "free") +
+    coord_cartesian(clip = "off", xlim = c(1, 366)) +
+    labs(y = y_label, color = "Year") +
+    theme_layout +
+    theme(
+      axis.title.x = element_blank(),
+      strip.background = element_rect(fill = "grey80"),
+      legend.position = "none",
+      panel.grid.major = element_line(color = "grey90"),
+      plot.title = element_text(hjust = 0.5),
+    ) +
+    scale_color_manual(values = col_years) +
+    scale_x_continuous(
+    breaks = month_breaks,
+    labels = month_labels,
+    limits = c(1, 400),
+    expand = expansion(mult = c(0, 0.05))
+  )
+}
+
+
+# Split by activity_type and apply function to each
+list_plot_cum <- df_cum %>%
+  split(.$activity_type) %>%
+  map(plotting_cum_plots)
+
+plots_cum_sum <- wrap_plots(list_plot_cum, nrow=length(unique(df_minimal$activity_type)))
+
+```
+
+```{r}
+
+fig_dir <- file.path("figures", user)
+dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
+
+# dir.create("figures", recursive = TRUE, showWarnings = FALSE)
+
+ggsave(
+  filename = file.path(fig_dir, "cum_sum_plots.pdf"),
+  plot = plots_cum_sum,
+  width = 30,
+  height = 15*length(activities),
+  units = "cm",
+  device = cairo_pdf,
+  limitsize = FALSE
+)
+```
+
+
+
+
