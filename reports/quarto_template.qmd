@@ -24,6 +24,7 @@ library(lubridate)
 library(hms)
 library(janitor)
 library(slider)
+library(scales)
 
 # set filter preference
 library(conflicted)
@@ -529,8 +530,8 @@ dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(
   filename = file.path(fig_dir, "cum_sum_plots.pdf"),
   plot = plots_cum_sum,
-  width = 30,
-  height = 15*length(activities),
+  width = 25,
+  height = 10*length(activities),
   units = "cm",
   device = cairo_pdf,
   limitsize = FALSE
