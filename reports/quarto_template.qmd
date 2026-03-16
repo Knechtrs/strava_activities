@@ -73,6 +73,7 @@ df_minimal <- acts_raw %>%
     "activity_type" = "sport_type",
     "activity_date" = "start_date_local"
   )
+  
 ```
 
 ```{r}
