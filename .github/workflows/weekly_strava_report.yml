@@ -47,7 +47,9 @@ jobs:
         uses: quarto-dev/quarto-actions/setup@v2
       
       - name: Install R packages (renv)
-        uses: r-lib/actions/setup-renv@v2    
+        run: |
+          renv::update()
+          renv::snapshot()
 
       - name: Sync Strava activities (per user)
         env:
